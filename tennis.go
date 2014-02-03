@@ -19,8 +19,10 @@ func (g *Game) Score() string {
 	if ok, player := g.hasWinner(); ok {
 		return player + " wins"
 	}
-
-	return translateScore(g.scorePlayerOne) + "-" + translateScore(g.scorePlayerTwo)
+	c := make(chan string)
+	go translateScore(g.scorePlayerOne, c)
+	go translateScore(g.scorePlayerTwo, c)
+	return <-c + "-" + <-c
 }
 
 func (g *Game) isDeuce() bool {
@@ -47,18 +49,22 @@ func (g *Game) hasWinner() (bool, string) {
 	return false, ""
 }
 
-func translateScore(score int) string {
+func translateScore(score int, c chan string) {
 	switch score {
 	case 0:
-		return "0"
+		c <- "0"
+		return
 	case 1:
-		return "15"
+		c <- "15"
+		return
 	case 2:
-		return "30"
+		c <- "30"
+		return
 	case 3:
-		return "40"
+		c <- "40"
+		return
 	}
-	return fmt.Sprintf("## Unhandled score %d ##", score)
+	c <- fmt.Sprintf("## Unhandled score %d ##", score)
 }
 
 func (g *Game) PlayerOneScores() {
